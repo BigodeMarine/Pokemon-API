@@ -14,6 +14,20 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      APP_NAME: Pokemon API
+      APP_VERSION: "1.0.0"
+      APP_DESCRIPTION: API de Pokémons utilizando FastAPI e PokeAPI
+      DEBUG: "false"
+      HOST: 0.0.0.0
+      PORT: "8000"
+
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pokemon_db
+
+      REDIS_HOST: localhost
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+
     services:
 
       postgres:
@@ -61,32 +75,17 @@ jobs:
           pip install -r requirements.txt
 
       - name: Executar migrations
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pokemon_db
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_DB: 0
         run: |
           alembic upgrade head
 
       - name: Executar testes
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pokemon_db
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_DB: 0
         run: |
           pytest -vv
 
       - name: Gerar cobertura
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/pokemon_db
-          REDIS_HOST: localhost
-          REDIS_PORT: 6379
-          REDIS_DB: 0
         run: |
           pytest --cov=app --cov-report=term-missing
 
       - name: Build da imagem Docker
         run: |
-          docker build -t pokemon-api:latest .s
+          docker build -t pokemon-api:latest .
