@@ -1,0 +1,29 @@
+# Ambiente virtual
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Variáveis de ambiente
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Testes
+.pytest_cache/
+
+# Alembic
+alembic/versions/*.pyc
+
+# Logs
+*.log
+
+# Sistema Operacional
+.DS_Store
+Thumbs.db
