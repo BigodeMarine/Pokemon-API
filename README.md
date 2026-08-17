@@ -1,132 +1,124 @@
-# 🐾 Pokémon API
+# 🎮 Pokémon API
 
-API REST para gerenciamento de Pokémon desenvolvida com **FastAPI**, **PostgreSQL**, **SQLAlchemy**, **Redis**, **Docker** e **Kubernetes**.
+API REST para gerenciamento de Pokémon desenvolvida com **FastAPI**, integrada à **PokeAPI**, **PostgreSQL** e **Redis**.
 
-o projeto possui:
-
-- Persistência em PostgreSQL
-- Cache com Redis
-- Migrations com Alembic
-- Testes unitários e de integração com pytest
-- Cobertura de testes
-- Logs estruturados
-- Logstash e Elasticsearch para processamento de logs
-- Containerização com Docker
-- Orquestração com Kubernetes
-- Persistent Volume para PostgreSQL
-- CI com GitHub Actions
-- Publicação da imagem Docker no GitHub Container Registry (GHCR)
-- Documentação automática com Swagger UI
+O projeto também possui suporte a **Docker**, **Docker Compose**, **Kubernetes**, **GitHub Actions**, **GitHub Container Registry (GHCR)** e monitoramento de logs utilizando a stack **ELK (Elasticsearch, Logstash e Kibana)**.
 
 ---
 
-# 📋 Sumário
+## 📋 Sobre o projeto
 
-- [Sobre o projeto]
-- [Arquitetura]
-- [Tecnologias]
-- [Estrutura do projeto]
-- [Pré-requisitos]
-- [Executando localmente]
-- [Executando com Docker Compose]
-- [Executando com Kubernetes]
-- [Endpoints]
-- [Redis e Cache]
-- [PostgreSQL e Alembic]
-- [Testes]
-- [Cobertura de testes]
-- [Logs e ELK]
-- [CI/CD]
-- [GitHub Container Registry]
+A aplicação permite consultar e gerenciar Pokémon através de uma API REST.
 
----
+Os dados dos Pokémon podem ser obtidos através da [PokeAPI](https://pokeapi.co/) e persistidos localmente no PostgreSQL.
 
-# 🚀 Sobre a Pokemon-API
-A aplicação utiliza a **FastAPI** para disponibilizar os endpoints HTTP e a **PokeAPI** como fonte externa de informações sobre Pokémon.
+A aplicação possui:
 
-Os dados consultados são persistidos no PostgreSQL e posteriormente podem ser utilizados pela API sem necessidade de consultar novamente a PokeAPI.
-
-O Redis é utilizado como camada de cache para reduzir consultas repetidas ao banco de dados.
+- CRUD completo de Pokémon
+- Integração com a PokeAPI
+- PostgreSQL para persistência
+- SQLAlchemy como ORM
+- Alembic para migrations
+- Redis para cache
+- Paginação
+- Validação utilizando Pydantic
+- Tratamento de exceções
+- Logging estruturado
+- Testes unitários e de integração
+- Cobertura de código com pytest-cov
+- Docker e Docker Compose
+- Kubernetes
+- GitHub Actions para CI/CD
+- Publicação de imagens no GHCR
+- Elasticsearch
+- Logstash
+- Kibana
+- Swagger UI para documentação interativa
 
 ---
 
 # 🏗️ Arquitetura
 
-A arquitetura principal da aplicação é:
+A aplicação utiliza uma arquitetura dividida em camadas:
 
 ```text
-                    ┌─────────────────┐
-                    │     Cliente     │
-                    │ Browser / HTTP  │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │    FastAPI      │
-                    │   REST API      │
-                    └────────┬────────┘
-                             │
-                 ┌───────────┴───────────┐
-                 │                       │
-                 ▼                       ▼
-          ┌─────────────┐         ┌─────────────┐
-          │    Redis    │         │ PostgreSQL  │
-          │    Cache    │         │   Database  │
-          └─────────────┘         └──────┬──────┘
-                                         │
-                                         │
-                                         ▼
-                                  ┌─────────────┐
-                                  │   PokeAPI   │
-                                  │ API externa │
-                                  └─────────────┘
-
-A aplicação também possui uma infraestrutura de logs:
-
+Cliente
+   │
+   ▼
 FastAPI
    │
+   ├──────────────► Redis
+   │                 │
+   │              Cache HIT
+   │                 │
+   │                 ▼
+   │              Resposta
+   │
+   │ Cache MISS
    ▼
-app.log
+Service
    │
    ▼
-Logstash
+Repository
    │
    ▼
-Elasticsearch
+PostgreSQL
+   │
+   │ Pokémon não encontrado
+   ▼
+PokeAPI
+   │
+   ▼
+PostgreSQL
+   │
+   ▼
+Redis
+   │
+   ▼
+Resposta
+```
 
-🛠️ Tecnologias
+---
 
-| Tecnologia        | Finalidade                          |
-| ----------------- | ----------------------------------- |
-| Python 3.11       | Linguagem de programação            |
-| FastAPI           | Desenvolvimento da API REST         |
-| Pydantic          | Validação e serialização dos dados  |
-| Pydantic Settings | Gerenciamento das configurações     |
-| SQLAlchemy        | ORM e acesso ao banco               |
-| PostgreSQL 16     | Banco de dados relacional           |
-| Psycopg           | Driver PostgreSQL                   |
-| Alembic           | Controle de migrations              |
-| Redis 7           | Cache                               |
-| HTTPX             | Comunicação com a PokeAPI           |
-| Pytest            | Testes automatizados                |
-| pytest-asyncio    | Suporte a testes assíncronos        |
-| pytest-cov        | Cobertura dos testes                |
-| Docker            | Containerização                     |
-| Docker Compose    | Execução dos serviços em containers |
-| Kubernetes        | Orquestração dos containers         |
-| GitHub Actions    | Integração contínua                 |
-| GHCR              | Armazenamento da imagem Docker      |
-| Logstash          | Processamento dos logs              |
-| Elasticsearch     | Armazenamento e consulta dos logs   |
-| Swagger UI        | Documentação interativa da API      |
+# 🛠️ Tecnologias utilizadas
 
-📁 Estrutura do projeto
+| Tecnologia | Utilização |
+|---|---|
+| Python 3.11 | Linguagem de programação |
+| FastAPI | Desenvolvimento da API REST |
+| Uvicorn | Servidor ASGI |
+| Pydantic | Validação e serialização dos dados |
+| Pydantic Settings | Gerenciamento das configurações |
+| SQLAlchemy | ORM e acesso ao banco |
+| PostgreSQL 16 | Banco de dados |
+| Psycopg | Driver PostgreSQL |
+| Alembic | Controle de migrations |
+| Redis 7 | Cache |
+| HTTPX | Comunicação com a PokeAPI |
+| Docker | Containerização |
+| Docker Compose | Orquestração do ambiente local |
+| Kubernetes | Orquestração dos containers |
+| pytest | Testes automatizados |
+| pytest-asyncio | Suporte a testes assíncronos |
+| pytest-cov | Cobertura de código |
+| GitHub Actions | CI/CD |
+| GHCR | Armazenamento das imagens Docker |
+| Elasticsearch | Armazenamento dos logs |
+| Logstash | Processamento e envio dos logs |
+| Kibana | Visualização dos logs |
+
+---
+
+# 📁 Estrutura do projeto
+
+```text
 pokemon-api/
 │
 ├── app/
 │   ├── api/
-│   │   └── routes/
-│   │       └── pokemon.py
+│   │   ├── routes/
+│   │   │   └── pokemon.py
+│   │   └── __init__.py
 │   │
 │   ├── cache/
 │   │   ├── pokemon_cache.py
@@ -138,12 +130,10 @@ pokemon-api/
 │   ├── core/
 │   │   ├── config.py
 │   │   ├── json_logger.py
-│   │   ├── logging.py
-│   │   └── security.py
+│   │   └── logging.py
 │   │
 │   ├── database/
 │   │   ├── base.py
-│   │   ├── database.py
 │   │   └── session.py
 │   │
 │   ├── dependencies/
@@ -189,9 +179,6 @@ pokemon-api/
 ├── logstash/
 │   └── logstash.conf
 │
-├── logs/
-│   └── app.log
-│
 ├── tests/
 │   ├── integration/
 │   │   ├── test_create_pokemon.py
@@ -213,200 +200,723 @@ pokemon-api/
 │   └── workflows/
 │       └── python-app.yml
 │
-├── .dockerignore
-├── .gitignore
-├── .env
-├── alembic.ini
-├── docker-compose.yml
 ├── Dockerfile
+├── docker-compose.yml
 ├── requirements.txt
+├── .env.example
 └── README.md
+```
 
-## ⚙️ Pré-requisitos
+---
+
+# 🚀 Executando o projeto
+
+## Pré-requisitos
 
 Para executar o projeto, é necessário ter instalado:
 
 - Docker Desktop
 - Git
 
+O Docker Desktop já inclui o Docker Compose.
 
-### Executando o projeto
+Não é necessário instalar Python, PostgreSQL ou Redis manualmente para executar a aplicação utilizando Docker Compose.
 
-Clone o repositório:
+---
+
+## 📥 Clonando o projeto
 
 ```bash
-git clone https://github.com/BigodeMarine/Pokemon-API.git
-cd pokemon-api
+git clone https://github.com/bigodemarine/pokemon-api.git
+```
 
-Suba a aplicação utilizando o Docker Compose:
+Entre no diretório:
+
+```bash
+cd pokemon-api
+```
+
+---
+
+# 🐳 Executando com Docker Compose
+
+Essa é a forma recomendada para executar o projeto.
+
+Execute:
+
+```bash
 docker compose up --build
+```
+
+O Docker Compose irá iniciar:
+
+```text
+Pokemon API
+PostgreSQL
+Redis
+Elasticsearch
+Logstash
+Kibana
+```
 
 Após a inicialização, a API estará disponível em:
 
+```text
 http://localhost:8000
+```
 
-A documentação interativa Swagger UI estará disponível em:
+---
 
+# 📖 Swagger UI
+
+A documentação interativa da API é disponibilizada automaticamente pelo FastAPI.
+
+Acesse:
+
+```text
 http://localhost:8000/docs
+```
 
-💻 Executando localmente
+O Swagger UI permite executar diretamente pelo navegador:
 
-Crie e ative um ambiente virtual:
-python -m venv .venv
+- GET
+- POST
+- PUT
+- DELETE
 
-Ative:
-.venv\Scripts\Activate.ps1
+sem necessidade de utilizar ferramentas externas.
 
-Instale as dependências:
-pip install -r requirements.txt
+Também está disponível a documentação OpenAPI em:
 
-Execute a aplicação:
-uvicorn app.main:app --reload
+```text
+http://localhost:8000/openapi.json
+```
 
-A API estará disponível em:
-http://localhost:8000
+---
 
-🐳 Executando com Docker Compose
+# 🔎 Endpoints
 
-Para iniciar:
-docker compose up -d --build
+## Health Check
 
-Verificar os containers:
-docker compose ps
+```http
+GET /
+```
 
-Para visualizar os logs:
-docker compose logs -f api
+Retorna informações básicas sobre a aplicação.
 
-☸️ Executando com Kubernetes
+---
 
-Antes de executar, certifique-se de que o Kubernetes do Docker Desktop está habilitado.
+## Listar Pokémon
 
-Verifique o contexto:
-kubectl config current-context
-
-Aplicar os manifestos
-kubectl apply -f k8s/
-
-Verifique os Pods:
-kubectl get pods
-
-Os principais componentes são:
-pokemon-api
-postgres
-redis
-
-📚 Swagger UI
-A FastAPI fornece documentação automática através do Swagger UI.
-
-Com a aplicação localmente:
-http://localhost:8000/docs
-
-🔌 Endpoints
-Listar Pokémon:
+```http
 GET /pokemons
+```
 
-Buscar Pokémon:
-GET /pokemons/{id}
+A API utiliza paginação através dos parâmetros:
 
-existem dois id:
-id = da aplicaçao
-pokemon_id = da pokeAPI
-
-Cadastrar Pokémon:
-POST /pokemons
-usa o id da pokeAPI para cadastrar os pokemons ex:25
-é o id do picachu
-
-Atualizar Pokémon:
-PUT /pokemons/{id}
-
-Excluir Pokémon:
-DELETE /pokemons/{id}
-
-📄 Paginação
-
-A listagem utiliza paginação através dos parâmetros:
+```text
 limit
 offset
+```
 
 Exemplo:
+
+```http
+GET /pokemons?limit=20&offset=0
+```
+
+### Parâmetros
+
+| Parâmetro | Tipo | Padrão | Descrição |
+|---|---|---:|---|
+| limit | integer | 20 | Quantidade máxima de registros |
+| offset | integer | 0 | Posição inicial |
+
+O `limit` aceita valores entre `1` e `100`.
+
+---
+
+### Exemplo de resposta
+
+```json
 {
+  "data": [
+    {
+      "id": 1,
+      "pokemon_id": 1,
+      "name": "bulbasaur",
+      "height": 7,
+      "weight": 69,
+      "types": [
+        "grass",
+        "poison"
+      ],
+      "sprites": {
+        "front_default": "...",
+        "back_default": "..."
+      }
+    }
+  ],
   "pagination": {
-    "total": 10,
-    "limit": 2,
-    "offset": 2,
-    "next": "/pokemons?limit=2&offset=4",
-    "previous": "/pokemons?limit=2&offset=0"
+    "total": 1281,
+    "limit": 20,
+    "offset": 0,
+    "next": "/pokemons?limit=20&offset=20",
+    "previous": null
   }
 }
+```
 
-⚡ Redis e Cache
+---
+
+# 🔎 Buscar Pokémon
+
+```http
+GET /pokemons/{id}
+```
+
+Exemplo:
+
+```http
+GET /pokemons/1
+```
+
+Resposta:
+
+```json
+{
+  "id": 1,
+  "pokemon_id": 1,
+  "name": "bulbasaur",
+  "height": 7,
+  "weight": 69,
+  "types": [
+    "grass",
+    "poison"
+  ],
+  "sprites": {
+    "front_default": "...",
+    "back_default": "..."
+  }
+}
+```
+
+---
+
+# ➕ Criar Pokémon
+
+```http
+POST /pokemons
+```
+
+O cadastro utiliza o ID do Pokémon na PokeAPI.
+
+Exemplo:
+
+```json
+{
+  "pokemon_id": 25
+}
+```
+e gera um id da aplicaçao.
+Exemplo:
+Voce cadastra picachu(id = 1, id pokeapi = 25) e bubasauro(id = 2, id pokeapi = 1) nessa ordem. 
+A aplicação:
+
+1. verifica se o Pokémon já está cadastrado;
+2. consulta a PokeAPI;
+3. obtém os dados do Pokémon;
+4. salva os dados no PostgreSQL;
+5. limpa os caches de listagem;
+6. retorna o Pokémon cadastrado.
+
+---
+
+# ✏️ Atualizar Pokémon
+
+```http
+PUT /pokemons/{id}
+```
+
+Permite atualizar os dados do Pokémon armazenado localmente.
+
+---
+
+# 🗑️ Excluir Pokémon
+
+```http
+DELETE /pokemons/{id}
+```
+
+Remove o Pokémon do PostgreSQL e também invalida seu cache.
+
+---
+
+# 🗄️ PostgreSQL
+
+O PostgreSQL é utilizado como banco de dados principal da aplicação.
+
+Configuração utilizada no ambiente Docker:
+
+```text
+Database: pokemon_db
+User: postgres
+Password: postgres
+Port: 5432
+```
+
+O banco é persistido através de um volume Docker:
+
+```text
+postgres_data
+```
+
+Dessa forma, os dados não são perdidos simplesmente ao reiniciar os containers.
+
+---
+
+# 🔄 Alembic
+
+O projeto utiliza Alembic para controlar as alterações do banco de dados.
+
+Para executar as migrations manualmente:
+
+```bash
+alembic upgrade head
+```
+
+A migration inicial cria a tabela de Pokémon.
+
+---
+
+# ⚡ Redis
 
 O Redis é utilizado como camada de cache.
 
-Nas consultas de Pokémon por ID, a aplicação verifica primeiro se existe uma resposta armazenada no Redis.
+Quando um Pokémon é consultado:
 
-GET /pokemons/{id}
-        │
-        ▼
-     Redis?
-     /     \
-   HIT     MISS
-    │        │
-    ▼        ▼
- Retorna   PostgreSQL
-              │
-              ▼
-           Retorna
+```text
+GET /pokemons/25
+```
 
+o fluxo é:
 
-🗄️ PostgreSQL e Alembic
+```text
+API
+ │
+ ▼
+Redis
+ │
+ ├── HIT ─────► retorna o cache
+ │
+ └── MISS
+       │
+       ▼
+   PostgreSQL
+       │
+       ▼
+   retorna dados
+       │
+       ▼
+   salva no Redis
+       │
+       ▼
+   retorna resposta
+```
 
-O PostgreSQL é utilizado para persistência dos Pokémon.
+As consultas de listagem também utilizam cache.
 
-O acesso ao banco é realizado através do SQLAlchemy.
+Quando um Pokémon é criado, atualizado ou removido, os caches relacionados são invalidados para evitar dados desatualizados.
 
-A estrutura do banco é controlada pelo Alembic.
+---
 
-Para executar as migrations:
-alembic upgrade head
+# 🌐 PokeAPI
 
-🧪 Testes
+A aplicação utiliza a PokeAPI como fonte externa de informações sobre os Pokémon.
+
+A integração é realizada através do `HTTPX`.
+
+A aplicação consulta:
+
+```text
+https://pokeapi.co/
+```
+
+Os dados obtidos incluem informações como:
+
+- ID
+- nome
+- altura
+- peso
+- tipos
+- sprites
+
+---
+
+# 🧱 Arquitetura da aplicação
+
+A aplicação está organizada em camadas.
+
+## Routes
+
+Responsáveis pelos endpoints HTTP.
+
+```text
+app/api/routes/
+```
+
+---
+
+## Services
+
+Contêm as regras de negócio.
+
+```text
+app/services/
+```
+
+---
+
+## Repositories
+
+Responsáveis pelo acesso aos dados através do SQLAlchemy.
+
+```text
+app/repositories/
+```
+
+---
+
+## Models
+
+Representam as tabelas do banco de dados.
+
+```text
+app/models/
+```
+
+---
+
+## Schemas
+
+Responsáveis pela validação e serialização dos dados através do Pydantic.
+
+```text
+app/schemas/
+```
+
+---
+
+## Clients
+
+Responsáveis pela comunicação com serviços externos.
+
+```text
+app/clients/pokeapi_client.py
+```
+
+---
+
+## Cache
+
+Responsável pela integração com Redis.
+
+```text
+app/cache/
+```
+
+---
+
+# 🧪 Testes
+
+O projeto possui testes unitários e de integração utilizando pytest.
+
 Estrutura:
+
+```text
 tests/
 ├── integration/
-│   ├── test_create_pokemon.py
-│   ├── test_delete_pokemon.py
-│   ├── test_get_pokemon.py
-│   ├── test_get_pokemons.py
-│   ├── test_health.py
-│   ├── test_pagination.py
-│   ├── test_pokemon_routes.py
-│   └── test_update_pokemon.py
-│
 └── unit/
-    ├── test_pokemon_service.py
-    └── test_repository.py
+```
 
-Executar todos os testes:
+Os testes cobrem:
+
+- Health Check
+- criação de Pokémon
+- consulta de Pokémon
+- listagem
+- atualização
+- exclusão
+- paginação
+- regras do service
+- repository
+- rotas
+
+---
+
+## Executando os testes
+
+Com o ambiente Python configurado:
+
+```bash
 pytest -vv
+```
 
-📊 Cobertura de testes
+Para executar especificamente os testes de paginação:
 
-A cobertura é gerada utilizando pytest-cov.
-Execute:
+```bash
+pytest tests/integration/test_pagination.py -vv
+```
+
+---
+
+# 📊 Cobertura de testes
+
+A cobertura pode ser gerada utilizando:
+
+```bash
 pytest --cov=app --cov-report=term-missing
+```
 
-📝 Logs e ELK
+A versão atual do projeto apresenta aproximadamente:
 
-A aplicação possui logging estruturado.
+```text
+92% de cobertura
+```
 
-Os logs são armazenados em:
-logs/app.log
+---
 
-O Logstash monitora o arquivo e envia os registros para o Elasticsearch.
+# 🐳 Docker
+
+O projeto possui um `Dockerfile` baseado em:
+
+```text
+python:3.11-slim
+```
+
+A imagem instala as dependências e executa a aplicação através do Uvicorn.
+
+A porta utilizada é:
+
+```text
+8000
+```
+
+---
+
+# 🐳 Docker Compose
+
+O `docker-compose.yml` disponibiliza o ambiente completo da aplicação.
+
+Serviços:
+
+```text
+api
+db
+redis
+elasticsearch
+logstash
+kibana
+```
+
+Para iniciar:
+
+```bash
+docker compose up --build
+```
+
+Para executar em segundo plano:
+
+```bash
+docker compose up -d --build
+```
+
+Para visualizar os containers:
+
+```bash
+docker compose ps
+```
+
+Para visualizar os logs:
+
+```bash
+docker compose logs -f
+```
+
+Para finalizar:
+
+```bash
+docker compose down
+```
+
+---
+
+# ☸️ Kubernetes
+
+A aplicação também possui manifestos Kubernetes.
+
+Os arquivos estão em:
+
+```text
+k8s/
+```
+
+```text
+k8s/
+├── deployment.yaml
+├── postgres.yaml
+├── redis.yaml
+└── service.yaml
+```
+
+A aplicação utiliza:
+
+- Deployment para a API
+- Deployment para PostgreSQL
+- PersistentVolumeClaim para PostgreSQL
+- Deployment para Redis
+- Services internos
+- Service LoadBalancer para a API
+
+---
+
+# 🚀 Deploy no Kubernetes
+
+Com o Kubernetes habilitado no Docker Desktop:
+
+```bash
+kubectl apply -f k8s/
+```
+
+Verificar os Pods:
+
+```bash
+kubectl get pods
+```
+
+Verificar os Services:
+
+```bash
+kubectl get services
+```
+
+Verificar o rollout da API:
+
+```bash
+kubectl rollout status deployment/pokemon-api
+```
+
+Para visualizar o Deployment:
+
+```bash
+kubectl get deployment
+```
+
+---
+
+## Atualização da aplicação
+
+O Deployment utiliza uma imagem Docker publicada no GitHub Container Registry.
+
+Quando uma nova versão da imagem é disponibilizada e aplicada ao Deployment, o Kubernetes realiza a atualização dos Pods.
+
+Verifique o rollout com:
+
+```bash
+kubectl rollout status deployment/pokemon-api
+```
+
+---
+
+# 📦 GitHub Container Registry
+
+As imagens Docker da aplicação são publicadas no:
+
+```text
+GitHub Container Registry (GHCR)
+```
+
+Formato utilizado:
+
+```text
+ghcr.io/bigodemarine/pokemon-api
+```
+
+---
+
+# 🔄 CI/CD com GitHub Actions
+
+O projeto possui uma pipeline configurada em:
+
+```text
+.github/workflows/python-app.yml
+```
+
+A pipeline é executada em:
+
+```text
+push na branch main
+```
+
+e:
+
+```text
+pull request para main
+```
 
 Fluxo:
+
+```text
+Git Push
+   │
+   ▼
+GitHub Actions
+   │
+   ▼
+Checkout
+   │
+   ▼
+Python 3.11
+   │
+   ▼
+Instalação das dependências
+   │
+   ▼
+PostgreSQL + Redis
+   │
+   ▼
+Alembic
+   │
+   ▼
+pytest
+   │
+   ▼
+Coverage
+   │
+   ▼
+Docker Build
+   │
+   ▼
+GitHub Container Registry
+```
+
+O workflow executa automaticamente os testes antes da publicação da imagem Docker.
+
+---
+
+# 📊 ELK Stack
+
+O projeto possui integração para coleta e visualização dos logs da aplicação utilizando:
+
+```text
+Elasticsearch
+Logstash
+Kibana
+```
+
+Fluxo:
+
+```text
 FastAPI
    │
    ▼
@@ -417,41 +927,278 @@ Logstash
    │
    ▼
 Elasticsearch
-
-O Docker Compose também disponibiliza o Kibana para visualização dos dados armazenados no Elasticsearch.
-Elasticsearch
-http://localhost:9200
+   │
+   ▼
 Kibana
+```
+
+---
+
+## Elasticsearch
+
+Executado na porta:
+
+```text
+9200
+```
+
+Acesse:
+
+```text
+http://localhost:9200
+```
+
+---
+
+## Kibana
+
+Executado na porta:
+
+```text
+5601
+```
+
+Acesse:
+
+```text
 http://localhost:5601
+```
 
-🔄 CI/CD
+---
 
-O projeto possui uma pipeline GitHub Actions localizada em:
-.github/workflows/python-app.yml
-O fluxo principal é:
-GitHub
-   │
-   ▼
-Checkout
-   │
-   ▼
-Configuração Python 3.11
-   │
-   ▼
-Instalação das dependências
-   │
-   ▼
-Alembic migrations
-   │
-   ▼
-pytest
-   │
-   ▼
-Cobertura
-   │
-   ▼
-Docker Build
-   │
-   ▼
-GitHub Container Registry
+## Logstash
 
+O pipeline está configurado em:
+
+```text
+logstash/logstash.conf
+```
+
+Os logs da aplicação são lidos a partir de:
+
+```text
+/app/logs/app.log
+```
+
+e enviados para um índice Elasticsearch:
+
+```text
+pokemon-api-logs
+```
+
+---
+
+# 📝 Logging
+
+A aplicação possui logging estruturado em JSON.
+
+Os logs são armazenados em:
+
+```text
+logs/app.log
+```
+
+O logging também possui middleware responsável por registrar informações das requisições HTTP.
+
+---
+
+# ⚙️ Variáveis de ambiente
+
+As configurações da aplicação são controladas através de variáveis de ambiente.
+
+Exemplo:
+
+```env
+APP_NAME=Pokemon API
+APP_VERSION=1.0.0
+APP_DESCRIPTION=API REST para gerenciamento de Pokémons
+
+DEBUG=True
+
+HOST=0.0.0.0
+PORT=8000
+
+DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/pokemon_db
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+REDIS_DB=0
+```
+
+---
+
+# 🔐 Tratamento de exceções
+
+A aplicação possui tratamento centralizado de exceções.
+
+Entre os casos tratados estão:
+
+- Pokémon não encontrado
+- Pokémon já cadastrado
+- erros de comunicação com a PokeAPI
+- erros de validação
+
+As respostas são retornadas em formato JSON.
+
+---
+
+# 📑 Documentação OpenAPI
+
+O FastAPI gera automaticamente a especificação OpenAPI.
+
+Swagger UI:
+
+```text
+http://localhost:8000/docs
+```
+
+ReDoc:
+
+```text
+http://localhost:8000/redoc
+```
+
+OpenAPI JSON:
+
+```text
+http://localhost:8000/openapi.json
+```
+
+---
+
+# 🔧 Desenvolvimento local
+
+Caso seja necessário executar a aplicação diretamente no Python, primeiro crie um ambiente virtual:
+
+```bash
+python -m venv .venv
+```
+
+Ative o ambiente no Windows PowerShell:
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+Instale as dependências:
+
+```bash
+pip install -r requirements.txt
+```
+
+Execute a migration:
+
+```bash
+alembic upgrade head
+```
+
+Inicie a API:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+A aplicação ficará disponível em:
+
+```text
+http://localhost:8000
+```
+
+Swagger:
+
+```text
+http://localhost:8000/docs
+```
+
+> Para uma execução completa e reproduzível do projeto, recomenda-se utilizar Docker Compose.
+
+---
+
+# 📌 Resumo dos principais comandos
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+```bash
+docker compose down
+```
+
+```bash
+docker compose ps
+```
+
+```bash
+docker compose logs -f
+```
+
+---
+
+## Testes
+
+```bash
+pytest -vv
+```
+
+```bash
+pytest --cov=app --cov-report=term-missing
+```
+
+---
+
+## Alembic
+
+```bash
+alembic upgrade head
+```
+
+---
+
+## Kubernetes
+
+```bash
+kubectl apply -f k8s/
+```
+
+```bash
+kubectl get pods
+```
+
+```bash
+kubectl get services
+```
+
+```bash
+kubectl rollout status deployment/pokemon-api
+```
+
+---
+
+# 🎯 Objetivos acadêmicos
+
+O projeto foi desenvolvido com o objetivo de demonstrar a aplicação prática de conceitos de desenvolvimento backend, incluindo:
+
+- desenvolvimento de APIs REST;
+- arquitetura em camadas;
+- persistência de dados;
+- ORM;
+- migrations;
+- cache;
+- integração com API externa;
+- validação de dados;
+- tratamento de exceções;
+- testes automatizados;
+- cobertura de código;
+- containerização;
+- orquestração com Kubernetes;
+- CI/CD;
+- publicação de imagens Docker;
+- monitoramento e gerenciamento de logs.
+
+---
+
+# 👨‍💻 Autor
+
+**BigodeMarine**
