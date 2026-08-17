@@ -1,8 +1,15 @@
+import os
+
+os.environ["DATABASE_URL"] = (
+    "postgresql+psycopg://postgres:postgres@localhost:5432/pokemon_db"
+)
+
 import pytest
 from unittest.mock import AsyncMock
 from fastapi.testclient import TestClient
 from app.main import app
 from app.cache.pokemon_cache import PokemonCache
+
 
 """
 Desabilita o Redis durante os testes.

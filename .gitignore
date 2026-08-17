@@ -1,29 +1,78 @@
-# Ambiente virtual
+# =========================
+# Python
+# =========================
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+# =========================
+# Virtual Environment
+# =========================
+
 .venv/
 venv/
+env/
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
+# =========================
+# Environment Variables
+# =========================
 
-# Variáveis de ambiente
 .env
+.env.*
+!.env.example
 
-# IDEs
+# =========================
+# Pytest / Coverage
+# =========================
+
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# =========================
+# Logs
+# =========================
+
+*.log
+logs/
+
+# =========================
+# IDE / Editor
+# =========================
+
 .vscode/
 .idea/
 
-# Testes
-.pytest_cache/
+# =========================
+# OS
+# =========================
 
-# Alembic
-alembic/versions/*.pyc
-
-# Logs
-*.log
-
-# Sistema Operacional
 .DS_Store
 Thumbs.db
+desktop.ini
+
+# =========================
+# Build / Distribution
+# =========================
+
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Docker
+# =========================
+
+docker-compose.override.yml
+
+# =========================
+# Temporary files
+# =========================
+
+*.tmp
+*.temp
+*.swp
+*.swo

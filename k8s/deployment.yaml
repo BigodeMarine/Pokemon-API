@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: pokemon-api
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: pokemon-api
+
+  template:
+    metadata:
+      labels:
+        app: pokemon-api
+
+    spec:
+
+      initContainers:
+        - name: database-migration
+
+          image: ghcr.io/bigodemarine/pokemon-api:sha-3892858
+
+          imagePullPolicy: Always
+
+          env:
+            - name: APP_NAME
+              value: "Pokemon API"
+
+            - name: APP_VERSION
+              value: "1.0.0"
+
+            - name: APP_DESCRIPTION
+              value: "API REST para gerenciamento de Pokémons"
+
+            - name: DEBUG
+              value: "false"
+
+            - name: HOST
+              value: "0.0.0.0"
+
+            - name: PORT
+              value: "8000"
+
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://postgres:postgres@postgres:5432/pokemon_db"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            - name: REDIS_PORT
+              value: "6379"
+
+            - name: REDIS_DB
+              value: "0"
+
+          command:
+            - alembic
+            - upgrade
+            - head
+
+      containers:
+
+        - name: pokemon-api
+
+          image: ghcr.io/bigodemarine/pokemon-api:sha-3892858
+
+          imagePullPolicy: Always
+
+          ports:
+            - containerPort: 8000
+
+          env:
+            - name: APP_NAME
+              value: "Pokemon API"
+
+            - name: APP_VERSION
+              value: "1.0.0"
+
+            - name: APP_DESCRIPTION
+              value: "API REST para gerenciamento de Pokémons"
+
+            - name: DEBUG
+              value: "false"
+
+            - name: HOST
+              value: "0.0.0.0"
+
+            - name: PORT
+              value: "8000"
+
+            - name: DATABASE_URL
+              value: "postgresql+psycopg://postgres:postgres@postgres:5432/pokemon_db"
+
+            - name: REDIS_HOST
+              value: "redis"
+
+            - name: REDIS_PORT
+              value: "6379"
+
+            - name: REDIS_DB
+              value: "0"
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 6
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3

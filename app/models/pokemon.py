@@ -7,8 +7,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
 from app.database.base import Base
-
-# Modelo que representa um Pokémon persistido no banco.
+"""
+Modelo que representa um Pokémon persistido no banco.
+"""
 class Pokemon(Base):
 
     __tablename__ = "pokemons"
