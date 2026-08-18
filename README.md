@@ -6,6 +6,12 @@ O projeto também possui suporte a **Docker**, **Docker Compose**, **Kubernetes*
 
 ---
 
+Deploy da aplicaçao feito na vercel:
+
+```
+https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/docs
+```
+
 ## 📋 Sobre o projeto
 
 A aplicação permite consultar e gerenciar Pokémon através de uma API REST.
@@ -420,7 +426,8 @@ Exemplo:
 ```
 e gera um id da aplicaçao.
 Exemplo:
-Voce cadastra picachu(id = 1, id pokeapi = 25) e bubasauro(id = 2, id pokeapi = 1) nessa ordem. 
+Voce cadastra picachu(pokeapi = 25) e bubasauro(pokeapi = 1) nessa ordem.  
+Entao o ID do picachu na API será 1 e do bubasauro será 2.
 A aplicação:
 
 1. verifica se o Pokémon já está cadastrado;
