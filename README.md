@@ -1310,3 +1310,25 @@ Na revisão visual de `/pokedex`, teste a busca, a coleção e os controles em
 larguras pequenas e intermediárias, em paisagem e com zoom. Os testes de navegador
 usados durante o desenvolvimento foram executados por scripts auxiliares do
 ambiente e não fazem parte da suíte versionada do repositório.
+
+### Vercel e Redis da Upstash
+
+Configure as variáveis em **Vercel → Settings → Environment Variables**, no
+ambiente correspondente (Production ou Preview), e faça um novo deploy após
+alterá-las. Os serviços locais de Docker não são transferidos para a Vercel.
+
+- `DATABASE_URL`: conexão com o PostgreSQL de produção, com migrations aplicadas.
+- `REDIS_URL`: URL **Redis TCP com TLS** fornecida pela Upstash, no formato
+  `rediss://default:<senha>@<host>:6379`. Guarde a senha somente nas configurações
+  protegidas. Não use a URL HTTPS ou o token REST da Upstash nesse campo: o cliente
+  utilizado pelo projeto é Redis TCP.
+- `REDIS_ENABLED=false`: permite operar diretamente pelo PostgreSQL sem acessar
+  o Redis, caso o cache ainda não esteja disponível. O padrão é `true`.
+
+Falhas de conexão ou timeout no cache são registradas como avisos e não impedem
+leituras e gravações no banco. Cada operação Redis tem timeouts de conexão e
+leitura de 2 segundos, sem novas tentativas automáticas. Falhas do PostgreSQL
+continuam sendo erros: desativar o cache não substitui a configuração do banco.
+Se uma invalidação de cache falhar, uma entrada antiga pode permanecer até seu
+TTL de 300 segundos; desative o cache enquanto corrige uma indisponibilidade
+persistente para evitar leituras desse conteúdo.

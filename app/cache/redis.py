@@ -1,4 +1,6 @@
 import redis.asyncio as redis
+from redis.asyncio.retry import Retry
+from redis.backoff import NoBackoff
 from app.core.config import settings
 
 """
@@ -8,6 +10,9 @@ if settings.REDIS_URL:
     redis_client = redis.from_url(
         settings.REDIS_URL,
         decode_responses=True,
+        socket_connect_timeout=2,
+        socket_timeout=2,
+        retry=Retry(NoBackoff(), 0),
     )
 else:
     redis_client = redis.Redis(
@@ -16,4 +21,7 @@ else:
         db=settings.REDIS_DB,
         password=settings.REDIS_PASSWORD or None,
         decode_responses=True,
+        socket_connect_timeout=2,
+        socket_timeout=2,
+        retry=Retry(NoBackoff(), 0),
     )
