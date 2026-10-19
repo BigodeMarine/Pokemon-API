@@ -1,6 +1,6 @@
 # 🎮 Pokédex · Pokémon API
 
-**[Abrir a Pokédex no deploy da Vercel](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/pokedex)**
+**[Abrir a Pokédex no deploy da Vercel](https://pokemon-api-iota-beige.vercel.app/pokedex)**
 
 [Swagger / testar a API](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/docs) · [Health check](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/)
 
@@ -376,8 +376,4 @@ a aplicação escreve JSON no terminal e nesse arquivo. Na Vercel, quando
 Kubernetes e ELK são alternativas/complementos de infraestrutura; não são
 necessários para usar a interface ou executar a suíte de desenvolvimento.
 
-## Autor e objetivo
-
-**BigodeMarine**. Projeto de estudo de desenvolvimento backend e frontend,
-integração de APIs, persistência, cache, testes, containerização e CI/CD.
-Pokémon pertence à Nintendo / Game Freak / The Pokémon Company.
+<p align="center">Refatorado com ☕ e muitos pokémons.</p>
