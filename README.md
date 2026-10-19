@@ -1332,3 +1332,23 @@ continuam sendo erros: desativar o cache não substitui a configuração do banc
 Se uma invalidação de cache falhar, uma entrada antiga pode permanecer até seu
 TTL de 300 segundos; desative o cache enquanto corrige uma indisponibilidade
 persistente para evitar leituras desse conteúdo.
+
+### Editar e excluir pela Pokédex
+
+Selecione um Pokémon na coleção. Na parte inferior direita da Pokédex:
+
+- **Atualizar** abre um formulário no painel para editar nome, altura em metros
+  e peso em quilogramas. **Salvar** envia PUT para `/pokemons/{id}`; **Cancelar**
+  mantém os dados anteriores. As medidas são convertidas para as unidades da API.
+- **Deletar** exibe no próprio painel “Tem certeza que quer apagar esse Pokémon?”,
+  junto do nome e ID nacional. **Sim** envia DELETE; **Não** cancela sem excluir.
+  A coleção e o contador são atualizados após a exclusão.
+
+Os botões ficam indisponíveis sem seleção ou durante operações. Erros mantêm o
+formulário aberto para tentar novamente ou cancelar. A tecla Escape também
+cancela a edição ou a confirmação. A confirmação começa com foco em **Não**.
+
+Os indicadores LIVE e ONLINE usam luzes pulsantes, com pulso mais rápido durante
+operações. São indicadores visuais de atividade, não monitoramento contínuo da
+conectividade. A preferência `prefers-reduced-motion` desativa as animações.
+Os botões usam rótulos de texto, sem setas. O comportamento mobile first é mantido.
