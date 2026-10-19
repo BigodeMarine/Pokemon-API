@@ -12,7 +12,7 @@ class PokeAPIClient:
     """
     Busca um Pokémon na PokeAPI.
     """
-    async def get_pokemon(self, pokemon_id: int) -> dict:
+    async def get_pokemon(self, pokemon_id: int | str) -> dict:
 
         url = f"{self.BASE_URL}/{pokemon_id}"
 

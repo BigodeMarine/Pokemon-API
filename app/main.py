@@ -1,3 +1,6 @@
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI
 from app.exceptions.handlers import register_exception_handlers
 from app.api import pokemon_router
@@ -44,3 +47,11 @@ async def health():
         "status": "running",
         "message": "Pokemon API iniciada com sucesso!"
     }
+
+# Frontend served by the same application, without an additional build process.
+frontend_dir = Path(__file__).resolve().parent / "static"
+app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
+
+@app.get("/pokedex", include_in_schema=False)
+async def pokedex():
+    return FileResponse(frontend_dir / "index.html")

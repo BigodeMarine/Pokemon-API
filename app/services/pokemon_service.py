@@ -27,12 +27,18 @@ class PokemonService:
     """
     async def create(self, data: PokemonCreate):
 
-        existing = self.repository.get_by_pokemon_id(data.pokemon_id)
+        if data.pokemon_id is not None:
+            existing = self.repository.get_by_pokemon_id(data.pokemon_id)
+            if existing:
+                raise PokemonAlreadyExists(data.pokemon_id)
 
+        pokemon_data = await self.client.get_pokemon(
+            data.pokemon_id if data.pokemon_id is not None else data.name
+        )
+        # Resolve names to the canonical PokeAPI ID before checking uniqueness.
+        existing = self.repository.get_by_pokemon_id(pokemon_data["id"])
         if existing:
-            raise PokemonAlreadyExists(data.pokemon_id)
-
-        pokemon_data = await self.client.get_pokemon(data.pokemon_id)
+            raise PokemonAlreadyExists(pokemon_data["id"])
 
         pokemon = Pokemon(
             pokemon_id=pokemon_data["id"],

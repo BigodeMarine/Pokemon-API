@@ -1,5 +1,5 @@
 from typing import List
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.schemas.pagination import Pagination
 
 """
@@ -15,11 +15,18 @@ Dados necessários para cadastrar um Pokémon.
 """
 class PokemonCreate(BaseModel):
     
-    pokemon_id: int = Field(
-        ...,
-        gt=0,
-        description="ID do Pokémon na PokeAPI."
-    )
+    pokemon_id: int | None = Field(default=None, gt=0, description="ID na PokeAPI.")
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+
+    @model_validator(mode="after")
+    def validate_identifier(self):
+        if self.name is not None:
+            self.name = self.name.strip().lower()
+            if not self.name or not all(c in "abcdefghijklmnopqrstuvwxyz0123456789-" for c in self.name):
+                raise ValueError("Use o nome oficial do Pokémon, sem espaços ou acentos.")
+        if (self.pokemon_id is None) == (self.name is None):
+            raise ValueError("Informe somente name ou pokemon_id.")
+        return self
 
 """
 Dados permitidos para atualização.

@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 """
-Cadastra um Pokémon utilizando seu ID da PokeAPI.
+Cadastra um Pokémon utilizando seu nome ou ID da PokeAPI.
 """
 @router.post(
     "",

@@ -1211,3 +1211,102 @@ O projeto foi desenvolvido com o objetivo de demonstrar a aplicação prática d
 # 👨‍💻 Autor
 
 **BigodeMarine**
+
+
+## Pokédex web
+
+Com a API em execução, abra a rota `/pokedex`. A interface é servida pelo próprio
+FastAPI e não requer Node.js nem uma etapa de build. O endpoint `/` continua sendo
+o health check; a documentação segue em `/docs`.
+
+Digite o nome oficial do Pokémon (por exemplo, `pikachu`) ou seu ID nacional (`25`)
+e selecione **Registrar**. O backend consulta a PokeAPI, resolve o ID oficial e
+persiste nome, tipos, altura, peso e URLs dos sprites de frente e costas. A ficha e
+a coleção recuperam os dados pelos endpoints GET existentes. O botão circular
+alterna os sprites e as setas navegam pelos Pokémon da página atual. A coleção
+possui paginação e pode ser recarregada sem perder os registros no banco.
+
+O cadastro por ID segue compatível. Para cadastrar pelo nome:
+
+```http
+POST /pokemons
+Content-Type: application/json
+
+{"name": "pikachu"}
+```
+
+Informe **somente** `name` ou `pokemon_id`. Nomes são normalizados para minúsculas;
+use o identificador oficial da PokeAPI, com hífen quando necessário. Um Pokémon já
+registrado retorna HTTP 409 e a interface permite consultar o registro existente.
+Altura e peso são convertidos para metros e quilogramas na interface.
+
+É necessário permitir HTTPS para `pokeapi.co` no backend. O navegador também
+precisa acessar os hosts das imagens retornadas (normalmente
+`raw.githubusercontent.com`). Erros de rede e imagens indisponíveis são exibidos
+na interface; nenhum registro de demonstração é inserido automaticamente.
+
+Validação determinística do novo fluxo, usando PostgreSQL e mocks da PokeAPI:
+
+```bash
+pytest tests/unit tests/integration/test_pokedex.py -q
+```
+
+A suíte completa (`pytest -q`) inclui testes adicionais que acessam a PokeAPI real.
+
+### Responsividade: mobile first
+
+O CSS em `app/static/pokedex.css` parte de uma única coluna para telas pequenas.
+Os painéis da Pokédex ficam empilhados e a busca apresenta o botão de registro
+abaixo do campo. O layout cresce conforme o espaço disponível, usando media
+queries com `min-width`:
+
+| Largura disponível | Comportamento |
+| --- | --- |
+| Abaixo de `40rem` (640 px com fonte padrão) | Painéis empilhados, busca em duas linhas e coleção com colunas automáticas. |
+| A partir de `40rem` | Campo e botão de busca na mesma linha; coleção com três colunas. |
+| A partir de `58rem` (928 px com fonte padrão) | Painéis lado a lado e coleção com quatro colunas. |
+| A partir de `70rem` (1120 px com fonte padrão) | Mais espaço interno e ajustes de apresentação para telas grandes. |
+
+A largura do dispositivo é limitada a 1000 px para manter a leitura confortável
+em monitores grandes. Espaçamentos e tamanhos de texto usam valores fluidos;
+nomes longos, mensagens e tipos quebram linha. A coleção se reorganiza sem impor
+uma largura mínima maior que a tela. As medidas do Pokémon também se reorganizam
+quando falta espaço.
+
+O campo de busca, o botão de cadastro e os controles de navegação têm altura
+mínima de 44 px para facilitar o toque. O campo usa fonte de 16 px para evitar o
+zoom automático ao receber foco em navegadores móveis. O viewport permite zoom,
+o foco de teclado tem destaque visual e a animação dos cartões respeita
+`prefers-reduced-motion`.
+
+### Validações realizadas
+
+- Suíte completa: **22 testes passaram**, incluindo cadastro por nome,
+  normalização, validação de entrada, resolução de ID, persistência, consulta,
+  sprites e prevenção de duplicatas.
+- Fluxo real com a PokeAPI: cadastro de `pikachu`, resolução para ID nacional 25,
+  consulta por GET e retorno dos sprites de frente e costas.
+- Navegador automatizado: estado vazio, cadastro, seleção na coleção, alternância
+  de sprites, duplicatas e mensagem de indisponibilidade da PokeAPI.
+- Responsividade verificada em 18 tamanhos, com larguras de 240 a 2560 px,
+  incluindo retrato, paisagem, limites dos breakpoints e textos longos a 320 px,
+  sem rolagem horizontal nos cenários verificados.
+
+Para repetir a validação do backend, com PostgreSQL, Redis e as variáveis de
+ambiente configurados:
+
+```bash
+alembic upgrade head
+pytest -q
+```
+
+Para conferir a sintaxe do JavaScript, caso Node.js esteja disponível:
+
+```bash
+node --check app/static/pokedex.js
+```
+
+Na revisão visual de `/pokedex`, teste a busca, a coleção e os controles em
+larguras pequenas e intermediárias, em paisagem e com zoom. Os testes de navegador
+usados durante o desenvolvimento foram executados por scripts auxiliares do
+ambiente e não fazem parte da suíte versionada do repositório.
