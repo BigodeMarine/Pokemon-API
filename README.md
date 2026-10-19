@@ -1351,4 +1351,6 @@ cancela a edição ou a confirmação. A confirmação começa com foco em **Nã
 Os indicadores LIVE e ONLINE usam luzes pulsantes, com pulso mais rápido durante
 operações. São indicadores visuais de atividade, não monitoramento contínuo da
 conectividade. A preferência `prefers-reduced-motion` desativa as animações.
-Os botões usam rótulos de texto, sem setas. O comportamento mobile first é mantido.
+Os botões de ações usam rótulos de texto; os controles da Pokédex mantêm o símbolo
+de girar e as setas de navegação, com nomes acessíveis. O comportamento mobile
+first é mantido.
