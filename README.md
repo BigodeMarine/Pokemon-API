@@ -1,1356 +1,383 @@
-# 🎮 Pokémon API
+# 🎮 Pokédex · Pokémon API
 
-API REST para gerenciamento de Pokémon desenvolvida com **FastAPI**, integrada à **PokeAPI**, **PostgreSQL** e **Redis**.
+**[Abrir a Pokédex no deploy da Vercel](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/pokedex)**
 
-O projeto também possui suporte a **Docker**, **Docker Compose**, **Kubernetes**, **GitHub Actions**, **GitHub Container Registry (GHCR)** e monitoramento de logs utilizando a stack **ELK (Elasticsearch, Logstash e Kibana)**.
+[Swagger / testar a API](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/docs) · [Health check](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/)
 
----
+Pokédex web com API REST em **FastAPI**, integração com a **PokeAPI**, persistência
+em **PostgreSQL** e cache opcional em **Redis**. Digite o nome ou ID de um Pokémon
+para registrá-lo, consultar sua ficha e gerenciar sua coleção.
 
-Deploy da aplicaçao feito na vercel:
+O frontend é servido pelo próprio backend: **HTML, CSS e JavaScript sem build
+separado**. A interface segue o visual de uma Pokédex vermelha, com telas escuras,
+detalhes azuis e verdes e favicon de Pokébola.
 
-[Acessar Pokemon API](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app)
+## Funcionalidades atuais
 
-### 📚 Documentação
+- Cadastro pelo nome oficial ou ID nacional, consultando a PokeAPI.
+- Resolução do nome para o ID oficial e prevenção de cadastro duplicado.
+- Ficha com sprites de frente e costas, tipos, altura e peso.
+- Coleção persistida, paginada e selecionável; atualização manual da listagem.
+- Botão **↻** para alternar os sprites e **◀ / ▶** para navegar na página atual.
+- Botões **Atualizar** e **Deletar** na parte inferior direita da Pokédex.
+- Edição de nome, altura e peso no próprio painel, com **Salvar / Cancelar**.
+- Exclusão com pergunta no painel e opções **Sim / Não**, sem popup do navegador.
+- Estados vazios, mensagens de erro, bloqueio de ações durante operações e
+  indicação de imagem indisponível.
+- Indicadores LIVE e ONLINE animados e pulso de atividade durante requisições.
+- Interface mobile first, navegação por teclado e suporte a movimento reduzido.
+- Cache com TTL e continuidade pelo PostgreSQL quando o Redis fica indisponível.
+- Logs estruturados, migrations, testes e pipeline de CI/CD.
 
-[Swagger UI](https://pokemon-1ce5u1km6-bigodemarines-projects.vercel.app/docs)
+## Como usar a interface
 
-## 📋 Sobre o projeto
+1. Abra `/pokedex` e digite, por exemplo, `pikachu` ou `25`.
+2. Clique em **Registrar**. O backend consulta a PokeAPI e salva o Pokémon no banco.
+3. A ficha recupera o registro via GET e exibe os sprites e dados físicos.
+4. Selecione um cartão da coleção para consultar outro registro. **↻** alterna
+   frente/costas; as setas navegam pelos registros da página atual.
+5. Use **Atualizar** para editar os dados locais. As medidas são apresentadas em
+   metros e quilogramas e convertidas para as unidades da API ao salvar.
+6. Use **Deletar** para abrir a confirmação. **Não** cancela; **Sim** remove o
+   registro e atualiza a coleção e o contador.
 
-A aplicação permite consultar e gerenciar Pokémon através de uma API REST.
+Os botões de edição/exclusão dependem de um Pokémon selecionado. Escape cancela
+a edição ou confirmação; o foco inicial da confirmação fica em **Não**. Uma falha
+ao salvar ou excluir mantém o painel aberto para cancelar ou tentar novamente.
+Editar um registro não altera o ID oficial nem os dados originais da PokeAPI.
 
-Os dados dos Pokémon podem ser obtidos através da [PokeAPI](https://pokeapi.co/) e persistidos localmente no PostgreSQL.
+## Responsividade e animações
 
-A aplicação possui:
+O CSS começa com uma coluna, painéis empilhados e busca com botão abaixo do campo.
+As media queries usam `min-width`, ampliando o layout apenas quando há espaço:
 
-- CRUD completo de Pokémon
-- Integração com a PokeAPI
-- PostgreSQL para persistência
-- SQLAlchemy como ORM
-- Alembic para migrations
-- Redis para cache
-- Paginação
-- Validação utilizando Pydantic
-- Tratamento de exceções
-- Logging estruturado
-- Testes unitários e de integração
-- Cobertura de código com pytest-cov
-- Docker e Docker Compose
-- Kubernetes
-- GitHub Actions para CI/CD
-- Publicação de imagens no GHCR
-- Elasticsearch
-- Logstash
-- Kibana
-- Swagger UI para documentação interativa
+| Largura disponível | Layout |
+| --- | --- |
+| Abaixo de `40rem` | Painéis empilhados; coleção com colunas automáticas. |
+| A partir de `40rem` (640 px com fonte padrão) | Busca em uma linha; coleção com três colunas. |
+| A partir de `58rem` (928 px com fonte padrão) | Painéis lado a lado; coleção com quatro colunas. |
+| A partir de `70rem` (1120 px com fonte padrão) | Ajustes de espaçamento para telas grandes. |
 
----
+A Pokédex tem largura máxima de 1000 px. Espaçamentos fluidos, quebra de nomes e
+mensagens e reorganização das medidas evitam cortes em telas pequenas. Os
+controles de toque principais têm pelo menos 44 px; o botão ↻ mede 48 px, com
+símbolo de 36 px. O campo de busca usa fonte de 16 px e o viewport permite zoom.
 
-# 🏗️ Arquitetura
+As luzes têm pulso suave; durante operações, o pulso fica mais rápido.
+São indicadores visuais de atividade, não monitoramento contínuo da conexão.
+`prefers-reduced-motion` desativa as animações, e o foco de teclado é destacado.
 
-A aplicação utiliza uma arquitetura dividida em camadas:
+## Tecnologias e organização
 
-```text
-Cliente
-   │
-   ▼
-FastAPI
-   │
-   ├──────────────► Redis
-   │                 │
-   │              Cache HIT
-   │                 │
-   │                 ▼
-   │              Resposta
-   │
-   │ Cache MISS
-   ▼
-Service
-   │
-   ▼
-Repository
-   │
-   ▼
-PostgreSQL
-   │
-   │ Pokémon não encontrado
-   ▼
-PokeAPI
-   │
-   ▼
-PostgreSQL
-   │
-   ▼
-Redis
-   │
-   ▼
-Resposta
-```
-
----
-
-# 🛠️ Tecnologias utilizadas
-
-| Tecnologia | Utilização |
-|---|---|
-| Python 3.11 | Linguagem de programação |
-| FastAPI | Desenvolvimento da API REST |
-| Uvicorn | Servidor ASGI |
-| Pydantic | Validação e serialização dos dados |
-| Pydantic Settings | Gerenciamento das configurações |
-| SQLAlchemy | ORM e acesso ao banco |
-| PostgreSQL 16 | Banco de dados |
-| Psycopg | Driver PostgreSQL |
-| Alembic | Controle de migrations |
-| Redis 7 | Cache |
-| HTTPX | Comunicação com a PokeAPI |
-| Docker | Containerização |
-| Docker Compose | Orquestração do ambiente local |
-| Kubernetes | Orquestração dos containers |
-| pytest | Testes automatizados |
-| pytest-asyncio | Suporte a testes assíncronos |
-| pytest-cov | Cobertura de código |
-| GitHub Actions | CI/CD |
-| GHCR | Armazenamento das imagens Docker |
-| Elasticsearch | Armazenamento dos logs |
-| Logstash | Processamento e envio dos logs |
-| Kibana | Visualização dos logs |
-
----
-
-# 📁 Estrutura do projeto
+| Componente | Tecnologia |
+| --- | --- |
+| Backend | Python 3.11, FastAPI, Uvicorn |
+| Validação/configuração | Pydantic, Pydantic Settings, `.env` |
+| Banco e migrations | PostgreSQL 16, SQLAlchemy, Psycopg, Alembic |
+| Cache | Redis 7; cliente Redis TCP assíncrono |
+| Integração externa | HTTPX / PokeAPI |
+| Frontend | HTML, CSS, JavaScript e SVG |
+| Testes | pytest, pytest-asyncio, pytest-cov |
+| Infraestrutura | Docker Compose, Kubernetes, Vercel, GitHub Actions / GHCR |
+| Observabilidade opcional | Elasticsearch, Logstash, Kibana |
 
 ```text
-pokemon-api/
-│
-├── app/
-│   ├── api/
-│   │   ├── routes/
-│   │   │   └── pokemon.py
-│   │   └── __init__.py
-│   │
-│   ├── cache/
-│   │   ├── pokemon_cache.py
-│   │   └── redis.py
-│   │
-│   ├── clients/
-│   │   └── pokeapi_client.py
-│   │
-│   ├── core/
-│   │   ├── config.py
-│   │   ├── json_logger.py
-│   │   └── logging.py
-│   │
-│   ├── database/
-│   │   ├── base.py
-│   │   └── session.py
-│   │
-│   ├── dependencies/
-│   │   ├── database.py
-│   │   └── pokemon.py
-│   │
-│   ├── exceptions/
-│   │   ├── handlers.py
-│   │   └── pokemon.py
-│   │
-│   ├── middleware/
-│   │   └── logging.py
-│   │
-│   ├── models/
-│   │   └── pokemon.py
-│   │
-│   ├── repositories/
-│   │   ├── base.py
-│   │   └── pokemon_repository.py
-│   │
-│   ├── schemas/
-│   │   ├── pagination.py
-│   │   └── pokemon.py
-│   │
-│   ├── services/
-│   │   ├── base.py
-│   │   └── pokemon_service.py
-│   │
-│   └── main.py
-│
-├── alembic/
-│   ├── versions/
-│   │   └── ab4cbc29a03b_create_pokemons_table.py
-│   ├── env.py
-│   └── script.py.mako
-│
-├── k8s/
-│   ├── deployment.yaml
-│   ├── postgres.yaml
-│   ├── redis.yaml
-│   └── service.yaml
-│
-├── logstash/
-│   └── logstash.conf
-│
-├── tests/
-│   ├── integration/
-│   │   ├── test_create_pokemon.py
-│   │   ├── test_delete_pokemon.py
-│   │   ├── test_get_pokemon.py
-│   │   ├── test_get_pokemons.py
-│   │   ├── test_health.py
-│   │   ├── test_pagination.py
-│   │   ├── test_pokemon_routes.py
-│   │   └── test_update_pokemon.py
-│   │
-│   ├── unit/
-│   │   ├── test_pokemon_service.py
-│   │   └── test_repository.py
-│   │
-│   └── conftest.py
-│
-├── .github/
-│   └── workflows/
-│       └── python-app.yml
-│
-├── Dockerfile
-├── docker-compose.yml
-├── requirements.txt
-├── .env.example
-└── README.md
+app/
+├── api/routes/       # Endpoints de Pokémon
+├── cache/            # Redis, TTL e tolerância a falhas
+├── clients/          # Cliente da PokeAPI
+├── core/             # Configuração e logging JSON
+├── database/         # Engine, sessões e Base do ORM
+├── dependencies/     # Injeção de banco, repository e service
+├── exceptions/       # Exceções e respostas HTTP
+├── middleware/       # Logs de requisições
+├── models/           # Persistência SQLAlchemy
+├── repositories/     # Consultas e gravações
+├── schemas/          # Validação e serialização
+├── services/         # Regras de negócio
+├── static/           # Pokédex: HTML, CSS, JS e favicon
+└── main.py           # Aplicação, health check e frontend
+api/index.py          # Entrada que exporta o app para o deploy
+alembic/              # Migrations
+tests/               # Testes unitários e de integração
+k8s/                  # Manifestos Kubernetes
+logstash/             # Pipeline de logs
+.github/workflows/    # CI/CD
 ```
 
----
+Fluxo de cadastro: interface → rota → service → PokeAPI → repository → PostgreSQL
+→ invalidação do cache de listas. Nas consultas, a API tenta o cache e recorre ao
+PostgreSQL quando não há uma entrada válida ou o Redis está indisponível.
 
-# 🚀 Executando o projeto
+## Executar com Docker Compose
 
-## Pré-requisitos
-
-Para executar o projeto, é necessário ter instalado:
-
-- Docker Desktop
-- Git
-
-O Docker Desktop já inclui o Docker Compose.
-
-Não é necessário instalar Python, PostgreSQL ou Redis manualmente para executar a aplicação utilizando Docker Compose.
-
----
-
-## 📥 Clonando o projeto
+Pré-requisitos: Git, Docker e Docker Compose.
 
 ```bash
-git clone https://github.com/bigodemarine/pokemon-api.git
+git clone https://github.com/BigodeMarine/Pokemon-API.git
+cd Pokemon-API
+cp .env.example .env
 ```
 
-Entre no diretório:
+O `.env.example` contém as configurações básicas. Para Compose, configure também
+no `.env`:
 
-```bash
-cd pokemon-api
-```
-
----
-
-# 🐳 Executando com Docker Compose
-
-Essa é a forma recomendada para executar o projeto.
-
-Execute:
-
-```bash
-docker compose up --build
-```
-
-O Docker Compose irá iniciar:
-
-```text
-Pokemon API
-PostgreSQL
-Redis
-Elasticsearch
-Logstash
-Kibana
-```
-
-Após a inicialização, a API estará disponível em:
-
-```text
-http://localhost:8000
-```
-
----
-
-# 📖 Swagger UI
-
-A documentação interativa da API é disponibilizada automaticamente pelo FastAPI.
-
-Acesse:
-
-```text
-http://localhost:8000/docs
-```
-
-O Swagger UI permite executar diretamente pelo navegador:
-
-- GET
-- POST
-- PUT
-- DELETE
-
-sem necessidade de utilizar ferramentas externas.
-
-Também está disponível a documentação OpenAPI em:
-
-```text
-http://localhost:8000/openapi.json
-```
-
----
-
-# 🔎 Endpoints
-
-## Health Check
-
-```http
-GET /
-```
-
-Retorna informações básicas sobre a aplicação.
-
----
-
-## Listar Pokémon
-
-```http
-GET /pokemons
-```
-
-A API utiliza paginação através dos parâmetros:
-
-```text
-limit
-offset
-```
-
-Exemplo:
-
-```http
-GET /pokemons?limit=20&offset=0
-```
-
-### Parâmetros
-
-| Parâmetro | Tipo | Padrão | Descrição |
-|---|---|---:|---|
-| limit | integer | 20 | Quantidade máxima de registros |
-| offset | integer | 0 | Posição inicial |
-
-O `limit` aceita valores entre `1` e `100`.
-
----
-
-### Exemplo de resposta
-
-```json
-{
-  "data": [
-    {
-      "id": 1,
-      "pokemon_id": 1,
-      "name": "bulbasaur",
-      "height": 7,
-      "weight": 69,
-      "types": [
-        "grass",
-        "poison"
-      ],
-      "sprites": {
-        "front_default": "...",
-        "back_default": "..."
-      }
-    }
-  ],
-  "pagination": {
-    "total": 1281,
-    "limit": 20,
-    "offset": 0,
-    "next": "/pokemons?limit=20&offset=20",
-    "previous": null
-  }
-}
-```
-
----
-
-# 🔎 Buscar Pokémon
-
-```http
-GET /pokemons/{id}
-```
-
-Exemplo:
-
-```http
-GET /pokemons/1
-```
-
-Resposta:
-
-```json
-{
-  "id": 1,
-  "pokemon_id": 1,
-  "name": "bulbasaur",
-  "height": 7,
-  "weight": 69,
-  "types": [
-    "grass",
-    "poison"
-  ],
-  "sprites": {
-    "front_default": "...",
-    "back_default": "..."
-  }
-}
-```
-
----
-
-# ➕ Criar Pokémon
-
-```http
-POST /pokemons
-```
-
-O cadastro utiliza o ID do Pokémon na PokeAPI.
-
-Exemplo:
-
-```json
-{
-  "pokemon_id": 25
-}
-```
-e gera um id da aplicaçao.
-Exemplo:
-Voce cadastra picachu(pokeapi = 25) e bubasauro(pokeapi = 1) nessa ordem.  
-Entao o ID do picachu na API será 1 e do bubasauro será 2.
-A aplicação:
-
-1. verifica se o Pokémon já está cadastrado;
-2. consulta a PokeAPI;
-3. obtém os dados do Pokémon;
-4. salva os dados no PostgreSQL;
-5. limpa os caches de listagem;
-6. retorna o Pokémon cadastrado.
-
----
-
-# ✏️ Atualizar Pokémon
-
-```http
-PUT /pokemons/{id}
-```
-
-Permite atualizar os dados do Pokémon armazenado localmente.
-
----
-
-# 🗑️ Excluir Pokémon
-
-```http
-DELETE /pokemons/{id}
-```
-
-Remove o Pokémon do PostgreSQL e também invalida seu cache.
-
----
-
-# 🗄️ PostgreSQL
-
-O PostgreSQL é utilizado como banco de dados principal da aplicação.
-
-Configuração utilizada no ambiente Docker:
-
-```text
-Database: pokemon_db
-User: postgres
-Password: postgres
-Port: 5432
-```
-
-O banco é persistido através de um volume Docker:
-
-```text
-postgres_data
-```
-
-Dessa forma, os dados não são perdidos simplesmente ao reiniciar os containers.
-
----
-
-# 🔄 Alembic
-
-O projeto utiliza Alembic para controlar as alterações do banco de dados.
-
-Para executar as migrations manualmente:
-
-```bash
-alembic upgrade head
-```
-
-A migration inicial cria a tabela de Pokémon.
-
----
-
-# ⚡ Redis
-
-O Redis é utilizado como camada de cache.
-
-Quando um Pokémon é consultado:
-
-```text
-GET /pokemons/25
-```
-
-o fluxo é:
-
-```text
-API
- │
- ▼
-Redis
- │
- ├── HIT ─────► retorna o cache
- │
- └── MISS
-       │
-       ▼
-   PostgreSQL
-       │
-       ▼
-   retorna dados
-       │
-       ▼
-   salva no Redis
-       │
-       ▼
-   retorna resposta
-```
-
-As consultas de listagem também utilizam cache.
-
-Quando um Pokémon é criado, atualizado ou removido, os caches relacionados são invalidados para evitar dados desatualizados.
-
----
-
-# 🌐 PokeAPI
-
-A aplicação utiliza a PokeAPI como fonte externa de informações sobre os Pokémon.
-
-A integração é realizada através do `HTTPX`.
-
-A aplicação consulta:
-
-```text
-https://pokeapi.co/
-```
-
-Os dados obtidos incluem informações como:
-
-- ID
-- nome
-- altura
-- peso
-- tipos
-- sprites
-
----
-
-# 🧱 Arquitetura da aplicação
-
-A aplicação está organizada em camadas.
-
-## Routes
-
-Responsáveis pelos endpoints HTTP.
-
-```text
-app/api/routes/
-```
-
----
-
-## Services
-
-Contêm as regras de negócio.
-
-```text
-app/services/
-```
-
----
-
-## Repositories
-
-Responsáveis pelo acesso aos dados através do SQLAlchemy.
-
-```text
-app/repositories/
-```
-
----
-
-## Models
-
-Representam as tabelas do banco de dados.
-
-```text
-app/models/
-```
-
----
-
-## Schemas
-
-Responsáveis pela validação e serialização dos dados através do Pydantic.
-
-```text
-app/schemas/
-```
-
----
-
-## Clients
-
-Responsáveis pela comunicação com serviços externos.
-
-```text
-app/clients/pokeapi_client.py
-```
-
----
-
-## Cache
-
-Responsável pela integração com Redis.
-
-```text
-app/cache/
-```
-
----
-
-# 🧪 Testes
-
-O projeto possui testes unitários e de integração utilizando pytest.
-
-Estrutura:
-
-```text
-tests/
-├── integration/
-└── unit/
-```
-
-Os testes cobrem:
-
-- Health Check
-- criação de Pokémon
-- consulta de Pokémon
-- listagem
-- atualização
-- exclusão
-- paginação
-- regras do service
-- repository
-- rotas
-
----
-
-## Executando os testes
-
-Com o ambiente Python configurado:
-
-```bash
-pytest -vv
-```
-
-Para executar especificamente os testes de paginação:
-
-```bash
-pytest tests/integration/test_pagination.py -vv
-```
-
----
-
-# 📊 Cobertura de testes
-
-A cobertura pode ser gerada utilizando:
-
-```bash
-pytest --cov=app --cov-report=term-missing
-```
-
-A versão atual do projeto apresenta aproximadamente:
-
-```text
-92% de cobertura
-```
-
----
-
-# 🐳 Docker
-
-O projeto possui um `Dockerfile` baseado em:
-
-```text
-python:3.11-slim
-```
-
-A imagem instala as dependências e executa a aplicação através do Uvicorn.
-
-A porta utilizada é:
-
-```text
-8000
-```
-
----
-
-# 🐳 Docker Compose
-
-O `docker-compose.yml` disponibiliza o ambiente completo da aplicação.
-
-Serviços:
-
-```text
-api
-db
-redis
-elasticsearch
-logstash
-kibana
-```
-
-Para iniciar:
-
-```bash
-docker compose up --build
-```
-
-Para executar em segundo plano:
-
-```bash
-docker compose up -d --build
-```
-
-Para visualizar os containers:
-
-```bash
-docker compose ps
-```
-
-Para visualizar os logs:
-
-```bash
-docker compose logs -f
-```
-
-Para finalizar:
-
-```bash
-docker compose down
-```
-
----
-
-# ☸️ Kubernetes
-
-A aplicação também possui manifestos Kubernetes.
-
-Os arquivos estão em:
-
-```text
-k8s/
-```
-
-```text
-k8s/
-├── deployment.yaml
-├── postgres.yaml
-├── redis.yaml
-└── service.yaml
-```
-
-A aplicação utiliza:
-
-- Deployment para a API
-- Deployment para PostgreSQL
-- PersistentVolumeClaim para PostgreSQL
-- Deployment para Redis
-- Services internos
-- Service LoadBalancer para a API
-
----
-
-# 🚀 Deploy no Kubernetes
-
-Com o Kubernetes habilitado no Docker Desktop:
-
-```bash
-kubectl apply -f k8s/
-```
-
-Verificar os Pods:
-
-```bash
-kubectl get pods
-```
-
-Verificar os Services:
-
-```bash
-kubectl get services
-```
-
-Verificar o rollout da API:
-
-```bash
-kubectl rollout status deployment/pokemon-api
-```
-
-Para visualizar o Deployment:
-
-```bash
-kubectl get deployment
-```
-
----
-
-## Atualização da aplicação
-
-O Deployment utiliza uma imagem Docker publicada no GitHub Container Registry.
-
-Quando uma nova versão da imagem é disponibilizada e aplicada ao Deployment, o Kubernetes realiza a atualização dos Pods.
-
-Verifique o rollout com:
-
-```bash
-kubectl rollout status deployment/pokemon-api
-```
-
----
-
-# 📦 GitHub Container Registry
-
-As imagens Docker da aplicação são publicadas no:
-
-```text
-GitHub Container Registry (GHCR)
-```
-
-Formato utilizado:
-
-```text
-ghcr.io/bigodemarine/pokemon-api
-```
-
----
-
-# 🔄 CI/CD com GitHub Actions
-
-O projeto possui uma pipeline configurada em:
-
-```text
-.github/workflows/python-app.yml
-```
-
-A pipeline é executada em:
-
-```text
-push na branch main
-```
-
-e:
-
-```text
-pull request para main
-```
-
-Fluxo:
-
-```text
-Git Push
-   │
-   ▼
-GitHub Actions
-   │
-   ▼
-Checkout
-   │
-   ▼
-Python 3.11
-   │
-   ▼
-Instalação das dependências
-   │
-   ▼
-PostgreSQL + Redis
-   │
-   ▼
-Alembic
-   │
-   ▼
-pytest
-   │
-   ▼
-Coverage
-   │
-   ▼
-Docker Build
-   │
-   ▼
-GitHub Container Registry
-```
-
-O workflow executa automaticamente os testes antes da publicação da imagem Docker.
-
----
-
-# 📊 ELK Stack
-
-O projeto possui integração para coleta e visualização dos logs da aplicação utilizando:
-
-```text
-Elasticsearch
-Logstash
-Kibana
-```
-
-Fluxo:
-
-```text
-FastAPI
-   │
-   ▼
-app.log
-   │
-   ▼
-Logstash
-   │
-   ▼
-Elasticsearch
-   │
-   ▼
-Kibana
-```
-
----
-
-## Elasticsearch
-
-Executado na porta:
-
-```text
-9200
-```
-
-Acesse:
-
-```text
-http://localhost:9200
-```
-
----
-
-## Kibana
-
-Executado na porta:
-
-```text
-5601
-```
-
-Acesse:
-
-```text
-http://localhost:5601
-```
-
----
-
-## Logstash
-
-O pipeline está configurado em:
-
-```text
-logstash/logstash.conf
-```
-
-Os logs da aplicação são lidos a partir de:
-
-```text
-/app/logs/app.log
-```
-
-e enviados para um índice Elasticsearch:
-
-```text
-pokemon-api-logs
-```
-
----
-
-# 📝 Logging
-
-A aplicação possui logging estruturado em JSON.
-
-Os logs são armazenados em:
-
-```text
-logs/app.log
-```
-
-O logging também possui middleware responsável por registrar informações das requisições HTTP.
-
----
-
-# ⚙️ Variáveis de ambiente
-
-As configurações da aplicação são controladas através de variáveis de ambiente.
-
-Exemplo:
-
-```env
-APP_NAME=Pokemon API
-APP_VERSION=1.0.0
-APP_DESCRIPTION=API REST para gerenciamento de Pokémons
-
-DEBUG=True
-
-HOST=0.0.0.0
-PORT=8000
-
+```dotenv
+DEBUG=false
 DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/pokemon_db
-
+REDIS_ENABLED=true
 REDIS_HOST=redis
 REDIS_PORT=6379
 REDIS_DB=0
 ```
 
----
+As credenciais acima são exemplos locais de desenvolvimento. Não as reutilize
+em produção. Se definir `REDIS_URL`, ela tem prioridade sobre host, porta e senha.
 
-# 🔐 Tratamento de exceções
-
-A aplicação possui tratamento centralizado de exceções.
-
-Entre os casos tratados estão:
-
-- Pokémon não encontrado
-- Pokémon já cadastrado
-- erros de comunicação com a PokeAPI
-- erros de validação
-
-As respostas são retornadas em formato JSON.
-
----
-
-# 📑 Documentação OpenAPI
-
-O FastAPI gera automaticamente a especificação OpenAPI.
-
-Swagger UI:
-
-```text
-http://localhost:8000/docs
-```
-
-ReDoc:
-
-```text
-http://localhost:8000/redoc
-```
-
-OpenAPI JSON:
-
-```text
-http://localhost:8000/openapi.json
-```
-
----
-
-# 🔧 Desenvolvimento local
-
-Caso seja necessário executar a aplicação diretamente no Python, primeiro crie um ambiente virtual:
+Para iniciar somente a API e seus serviços de desenvolvimento:
 
 ```bash
-python -m venv .venv
+docker compose up -d --build api
+docker compose exec api alembic upgrade head
 ```
 
-Ative o ambiente no Windows PowerShell:
+O Compose inicia PostgreSQL e Redis como dependências da API. A migration é um
+passo separado: o comando da API no Compose não a executa automaticamente.
 
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-Instale as dependências:
+- Pokédex: `http://localhost:8000/pokedex`
+- Swagger: `http://localhost:8000/docs`
+- Health check: `http://localhost:8000/`
 
 ```bash
-pip install -r requirements.txt
-```
-
-Execute a migration:
-
-```bash
-alembic upgrade head
-```
-
-Inicie a API:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-A aplicação ficará disponível em:
-
-```text
-http://localhost:8000
-```
-
-Swagger:
-
-```text
-http://localhost:8000/docs
-```
-
-> Para uma execução completa e reproduzível do projeto, recomenda-se utilizar Docker Compose.
-
----
-
-# 📌 Resumo dos principais comandos
-
-## Docker
-
-```bash
-docker compose up --build
-```
-
-```bash
+docker compose logs -f api
+docker compose ps
 docker compose down
 ```
 
+O PostgreSQL usa o volume `postgres_data`. `docker compose down` preserva o volume.
+Para incluir também a stack ELK, execute `docker compose up -d --build` sem limitar
+o serviço; ela consome recursos adicionais e não é necessária para usar a Pokédex.
+
+## Desenvolvimento direto em Python
+
+Use Python 3.11, PostgreSQL e, opcionalmente, Redis. Crie um ambiente virtual:
+
 ```bash
-docker compose ps
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
 ```
 
-```bash
-docker compose logs -f
+No PowerShell, a ativação é `.venv\Scripts\Activate.ps1`. Ajuste o `.env` para o
+banco local; os nomes `db` e `redis` são do Compose, não do host:
+
+```dotenv
+DEBUG=false
+DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/pokemon_db
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_ENABLED=true
 ```
 
----
-
-## Testes
+Para iniciar apenas os serviços com Docker e executar o backend no host:
 
 ```bash
-pytest -vv
-```
-
-```bash
-pytest --cov=app --cov-report=term-missing
-```
-
----
-
-## Alembic
-
-```bash
+docker compose up -d db redis
 alembic upgrade head
+uvicorn app.main:app --reload
 ```
 
----
+A interface fica em `/pokedex`. Node.js não é necessário para executar o frontend.
 
-## Kubernetes
+## Variáveis de ambiente
 
-```bash
-kubectl apply -f k8s/
-```
+| Variável | Uso / padrão |
+| --- | --- |
+| `APP_NAME` | Obrigatória; nome da aplicação. |
+| `APP_VERSION` | Obrigatória; versão. |
+| `APP_DESCRIPTION` | Obrigatória; descrição. |
+| `DEBUG` | Obrigatória; booleano, prefira `false` em produção. |
+| `HOST` / `PORT` | Obrigatórias nas configurações; o comando do servidor define o bind efetivo. |
+| `DATABASE_URL` | Obrigatória; URL SQLAlchemy do PostgreSQL. |
+| `REDIS_ENABLED` | `true`; `false` desativa as operações de cache. |
+| `REDIS_URL` | Vazia por padrão; quando presente, prevalece sobre as opções abaixo. |
+| `REDIS_HOST` / `REDIS_PORT` | `localhost` / `6379`. |
+| `REDIS_DB` | `0`. |
+| `REDIS_PASSWORD` | Vazia por padrão; senha Redis quando usada a configuração por host. |
 
-```bash
-kubectl get pods
-```
+Os valores são lidos do processo e do `.env` local. Não versione senhas nem URLs
+com credenciais. O `.env.example` não lista todas as opções opcionais acima.
 
-```bash
-kubectl get services
-```
+## Deploy na Vercel e Redis da Upstash
 
-```bash
-kubectl rollout status deployment/pokemon-api
-```
+O frontend é servido por FastAPI em `/pokedex`, com arquivos em `/static`.
+A rota `/` continua sendo o health check. Não configure um build Node.js separado.
 
----
+1. Conecte o repositório e configure a branch de produção `main`.
+2. Configure as variáveis obrigatórias em **Settings → Environment Variables**.
+3. Use um PostgreSQL acessível pela Vercel e aplique `alembic upgrade head` contra
+   esse banco em um ambiente autorizado com a configuração de produção.
+4. Para Upstash, configure `REDIS_URL` com a conexão **Redis TCP com TLS**:
 
-# 🎯 Objetivos acadêmicos
+   ```text
+   rediss://default:SENHA_DO_REDIS@HOST_DA_UPSTASH:6379
+   ```
 
-O projeto foi desenvolvido com o objetivo de demonstrar a aplicação prática de conceitos de desenvolvimento backend, incluindo:
+   Use a senha Redis, não `UPSTASH_REDIS_REST_TOKEN` nem a URL HTTPS da API REST.
+   Prefira uma região próxima da Function Region configurada na Vercel.
+5. Defina `REDIS_ENABLED=true`, ou `false` para operar sem cache.
+6. Aplique as variáveis ao ambiente correto (Production/Preview) e faça Redeploy
+   após alterações. Confira o commit do deploy antes de testar `/pokedex`.
 
-- desenvolvimento de APIs REST;
-- arquitetura em camadas;
-- persistência de dados;
-- ORM;
-- migrations;
-- cache;
-- integração com API externa;
-- validação de dados;
-- tratamento de exceções;
-- testes automatizados;
-- cobertura de código;
-- containerização;
-- orquestração com Kubernetes;
-- CI/CD;
-- publicação de imagens Docker;
-- monitoramento e gerenciamento de logs.
+PostgreSQL e Redis do ambiente local não são transferidos para a Vercel. É
+necessário permitir acesso HTTPS à `pokeapi.co` pelo backend e aos hosts dos
+sprites pelo navegador, normalmente `raw.githubusercontent.com`.
 
----
+### Falhas de cache
 
-# 👨‍💻 Autor
+O Redis tem TTL de 300 segundos, timeouts de conexão e leitura de 2 segundos e
+nenhuma nova tentativa automática. Falhas de conexão, timeout ou conteúdo JSON
+inválido no cache geram avisos; a API continua consultando o PostgreSQL. Falhas do
+banco não são resolvidas pela desativação do cache.
 
-**BigodeMarine**
+Se uma invalidação falhar, uma entrada antiga pode permanecer até o TTL expirar.
+Use `REDIS_ENABLED=false` durante uma indisponibilidade persistente para evitar
+leituras desse cache. Se um Redis tiver sido excluído por inatividade, crie outro
+e atualize a conexão: para este projeto, não é necessário restaurar o cache antigo,
+pois os registros persistentes ficam no PostgreSQL.
 
+## API REST
 
-## Pokédex web
+`id` é o identificador interno do registro; `pokemon_id` é o ID nacional retornado
+pela PokeAPI. Consultas individuais, edição e exclusão usam o **ID interno**.
 
-Com a API em execução, abra a rota `/pokedex`. A interface é servida pelo próprio
-FastAPI e não requer Node.js nem uma etapa de build. O endpoint `/` continua sendo
-o health check; a documentação segue em `/docs`.
+| Método | Rota | Comportamento |
+| --- | --- | --- |
+| GET | `/` | Status básico da aplicação; não comprova saúde de banco/Redis. |
+| GET | `/pokedex` | Interface web. |
+| GET | `/docs`, `/redoc`, `/openapi.json` | Documentação e contrato da API. |
+| POST | `/pokemons` | Registra por nome ou ID da PokeAPI; retorna 201. |
+| GET | `/pokemons?limit=20&offset=0` | Lista paginada; `limit` entre 1 e 100. |
+| GET | `/pokemons/{id}` | Consulta um registro pelo ID interno. |
+| PUT | `/pokemons/{id}` | Atualiza nome, altura e/ou peso. |
+| DELETE | `/pokemons/{id}` | Remove o registro; retorna 204, sem corpo. |
 
-Digite o nome oficial do Pokémon (por exemplo, `pikachu`) ou seu ID nacional (`25`)
-e selecione **Registrar**. O backend consulta a PokeAPI, resolve o ID oficial e
-persiste nome, tipos, altura, peso e URLs dos sprites de frente e costas. A ficha e
-a coleção recuperam os dados pelos endpoints GET existentes. O botão circular
-alterna os sprites e as setas navegam pelos Pokémon da página atual. A coleção
-possui paginação e pode ser recarregada sem perder os registros no banco.
+Cadastro por nome:
 
-O cadastro por ID segue compatível. Para cadastrar pelo nome:
-
-```http
-POST /pokemons
-Content-Type: application/json
-
+```json
 {"name": "pikachu"}
 ```
 
-Informe **somente** `name` ou `pokemon_id`. Nomes são normalizados para minúsculas;
-use o identificador oficial da PokeAPI, com hífen quando necessário. Um Pokémon já
-registrado retorna HTTP 409 e a interface permite consultar o registro existente.
-Altura e peso são convertidos para metros e quilogramas na interface.
+Ou por ID nacional:
 
-É necessário permitir HTTPS para `pokeapi.co` no backend. O navegador também
-precisa acessar os hosts das imagens retornadas (normalmente
-`raw.githubusercontent.com`). Erros de rede e imagens indisponíveis são exibidos
-na interface; nenhum registro de demonstração é inserido automaticamente.
-
-Validação determinística do novo fluxo, usando PostgreSQL e mocks da PokeAPI:
-
-```bash
-pytest tests/unit tests/integration/test_pokedex.py -q
+```json
+{"pokemon_id": 25}
 ```
 
-A suíte completa (`pytest -q`) inclui testes adicionais que acessam a PokeAPI real.
+Informe somente um desses campos. O nome é normalizado removendo espaços externos
+e convertendo para minúsculas. Use o identificador oficial da PokeAPI, com hífen
+quando necessário; nomes com espaços internos ou acentos são rejeitados.
 
-### Responsividade: mobile first
+Exemplo de atualização local:
 
-O CSS em `app/static/pokedex.css` parte de uma única coluna para telas pequenas.
-Os painéis da Pokédex ficam empilhados e a busca apresenta o botão de registro
-abaixo do campo. O layout cresce conforme o espaço disponível, usando media
-queries com `min-width`:
+```json
+{"name": "pikachu", "height": 4, "weight": 60}
+```
 
-| Largura disponível | Comportamento |
-| --- | --- |
-| Abaixo de `40rem` (640 px com fonte padrão) | Painéis empilhados, busca em duas linhas e coleção com colunas automáticas. |
-| A partir de `40rem` | Campo e botão de busca na mesma linha; coleção com três colunas. |
-| A partir de `58rem` (928 px com fonte padrão) | Painéis lado a lado e coleção com quatro colunas. |
-| A partir de `70rem` (1120 px com fonte padrão) | Mais espaço interno e ajustes de apresentação para telas grandes. |
+Na API, altura é um inteiro em **decímetros** e peso em **hectogramas**. Nesse
+exemplo, a interface apresenta 0,4 m e 6 kg. A resposta inclui `types` e `sprites`
+com `front_default` e `back_default`.
 
-A largura do dispositivo é limitada a 1000 px para manter a leitura confortável
-em monitores grandes. Espaçamentos e tamanhos de texto usam valores fluidos;
-nomes longos, mensagens e tipos quebram linha. A coleção se reorganiza sem impor
-uma largura mínima maior que a tela. As medidas do Pokémon também se reorganizam
-quando falta espaço.
+A listagem retorna `data` e `pagination` com `total`, `limit`, `offset`, `next` e
+`previous`. Erros previstos incluem 404 para Pokémon ausente, 409 para duplicata,
+422 para entrada inválida e 503 para indisponibilidade da PokeAPI. Um erro 500
+exige examinar os logs da função/servidor; a resposta pública não expõe detalhes.
 
-O campo de busca, o botão de cadastro e os controles de navegação têm altura
-mínima de 44 px para facilitar o toque. O campo usa fonte de 16 px para evitar o
-zoom automático ao receber foco em navegadores móveis. O viewport permite zoom,
-o foco de teclado tem destaque visual e a animação dos cartões respeita
-`prefers-reduced-motion`.
+## Testes e validação
 
-### Validações realizadas
-
-- Suíte completa: **22 testes passaram**, incluindo cadastro por nome,
-  normalização, validação de entrada, resolução de ID, persistência, consulta,
-  sprites e prevenção de duplicatas.
-- Fluxo real com a PokeAPI: cadastro de `pikachu`, resolução para ID nacional 25,
-  consulta por GET e retorno dos sprites de frente e costas.
-- Navegador automatizado: estado vazio, cadastro, seleção na coleção, alternância
-  de sprites, duplicatas e mensagem de indisponibilidade da PokeAPI.
-- Responsividade verificada em 18 tamanhos, com larguras de 240 a 2560 px,
-  incluindo retrato, paisagem, limites dos breakpoints e textos longos a 320 px,
-  sem rolagem horizontal nos cenários verificados.
-
-Para repetir a validação do backend, com PostgreSQL, Redis e as variáveis de
-ambiente configurados:
+A suíte atual possui **26 casos**, incluindo testes parametrizados. Use um banco
+de desenvolvimento/testes: os testes de integração criam, editam e removem dados.
+`tests/conftest.py` fixa a conexão em
+`postgresql+psycopg://postgres:postgres@localhost:5432/pokemon_db`. Tenha esse banco
+preparado e execute as migrations com a mesma configuração antes de testar.
 
 ```bash
 alembic upgrade head
 pytest -q
+pytest --cov=app --cov-report=term-missing
 ```
 
-Para conferir a sintaxe do JavaScript, caso Node.js esteja disponível:
+| Grupo | O que verifica |
+| --- | --- |
+| `tests/unit/` | Regras do service, duplicatas e falha da PokeAPI; inclui um teste básico de sanity no arquivo de repository. |
+| `tests/integration/test_pokedex.py` | Entrada por nome/ID, normalização, consulta à PokeAPI por nome, persistência real, GET, sprites, duplicatas e arquivos do frontend. |
+| `tests/integration/test_cache_failure.py` | Erros de conexão/timeout do Redis, cache desativado e GET/POST funcionando durante falha simulada do cache. |
+| Demais testes de integração | Saúde, cadastro, consulta, listagem, paginação, atualização e exclusão. |
+
+Para executar apenas os testes unitários e os novos cenários determinísticos:
+
+```bash
+pytest tests/unit tests/integration/test_pokedex.py tests/integration/test_cache_failure.py -q
+```
+
+Os novos cenários simulam a PokeAPI e falhas do Redis, mas a persistência de
+integração usa PostgreSQL real. A fixture padrão simula o cache; os testes de
+falha recuperam as implementações reais e simulam o cliente Redis. A suíte
+completa também contém testes que consultam a PokeAPI real e dependem de rede.
+
+O resultado mais recente é **26 testes passando**. Não há limite de cobertura
+configurado; gere o relatório para medir a cobertura da versão atual.
+
+### Validação do frontend
 
 ```bash
 node --check app/static/pokedex.js
 ```
 
-Na revisão visual de `/pokedex`, teste a busca, a coleção e os controles em
-larguras pequenas e intermediárias, em paisagem e com zoom. Os testes de navegador
-usados durante o desenvolvimento foram executados por scripts auxiliares do
-ambiente e não fazem parte da suíte versionada do repositório.
+Node.js é opcional e usado aqui apenas para verificar a sintaxe. Durante o
+desenvolvimento, scripts auxiliares com Playwright validaram estados vazios,
+cadastro, edição, cancelamento, exclusão, erros e novas tentativas. Esses scripts
+não integram a suíte versionada; `test_frontend_assets` verifica a entrega dos
+arquivos, não toda a interação do navegador.
 
-### Vercel e Redis da Upstash
+Foram verificadas 18 dimensões entre 240 e 2560 px para o layout mobile first, e
+11 larguras para o painel de edição/exclusão, incluindo textos longos e orientação
+horizontal. Ao alterar a interface, revise também teclado, zoom, frente/costas,
+confirmação de exclusão e `prefers-reduced-motion`.
 
-Configure as variáveis em **Vercel → Settings → Environment Variables**, no
-ambiente correspondente (Production ou Preview), e faça um novo deploy após
-alterá-las. Os serviços locais de Docker não são transferidos para a Vercel.
+## CI/CD, containers e observabilidade
 
-- `DATABASE_URL`: conexão com o PostgreSQL de produção, com migrations aplicadas.
-- `REDIS_URL`: URL **Redis TCP com TLS** fornecida pela Upstash, no formato
-  `rediss://default:<senha>@<host>:6379`. Guarde a senha somente nas configurações
-  protegidas. Não use a URL HTTPS ou o token REST da Upstash nesse campo: o cliente
-  utilizado pelo projeto é Redis TCP.
-- `REDIS_ENABLED=false`: permite operar diretamente pelo PostgreSQL sem acessar
-  o Redis, caso o cache ainda não esteja disponível. O padrão é `true`.
+O workflow `.github/workflows/python-app.yml` roda em pushes e pull requests para
+`main`: Python 3.11, PostgreSQL 16, Redis 7, migrations, pytest, cobertura e build
+Docker. No push para `main`, publica a imagem em `ghcr.io/bigodemarine/pokemon-api`
+com tags `latest` e `sha-…`. A implantação Vercel depende da integração do projeto
+com o GitHub, não de uma etapa de deploy nesse workflow.
 
-Falhas de conexão ou timeout no cache são registradas como avisos e não impedem
-leituras e gravações no banco. Cada operação Redis tem timeouts de conexão e
-leitura de 2 segundos, sem novas tentativas automáticas. Falhas do PostgreSQL
-continuam sendo erros: desativar o cache não substitui a configuração do banco.
-Se uma invalidação de cache falhar, uma entrada antiga pode permanecer até seu
-TTL de 300 segundos; desative o cache enquanto corrige uma indisponibilidade
-persistente para evitar leituras desse conteúdo.
+O `Dockerfile` usa Python 3.11 slim e inicia Uvicorn na porta 8000.
 
-### Editar e excluir pela Pokédex
+Os manifestos em `k8s/` incluem PostgreSQL com PVC, Redis, API, initContainer de
+migration, probes e Service LoadBalancer. Eles referenciam uma tag fixa de imagem;
+antes de usar uma versão nova, atualize a referência tanto no initContainer quanto
+no container e configure credenciais adequadas ao cluster.
 
-Selecione um Pokémon na coleção. Na parte inferior direita da Pokédex:
+```bash
+kubectl apply -f k8s/
+kubectl rollout status deployment/pokemon-api
+kubectl get pods
+kubectl get services
+```
 
-- **Atualizar** abre um formulário no painel para editar nome, altura em metros
-  e peso em quilogramas. **Salvar** envia PUT para `/pokemons/{id}`; **Cancelar**
-  mantém os dados anteriores. As medidas são convertidas para as unidades da API.
-- **Deletar** exibe no próprio painel “Tem certeza que quer apagar esse Pokémon?”,
-  junto do nome e ID nacional. **Sim** envia DELETE; **Não** cancela sem excluir.
-  A coleção e o contador são atualizados após a exclusão.
+A stack ELK opcional do Compose usa Elasticsearch (9200), Logstash (5044) e Kibana
+(5601). O Logstash lê `logs/app.log` e envia ao índice `pokemon-api-logs`. Localmente,
+a aplicação escreve JSON no terminal e nesse arquivo. Na Vercel, quando
+`VERCEL=1`, escreve somente em stdout, disponível nos logs da plataforma.
 
-Os botões ficam indisponíveis sem seleção ou durante operações. Erros mantêm o
-formulário aberto para tentar novamente ou cancelar. A tecla Escape também
-cancela a edição ou a confirmação. A confirmação começa com foco em **Não**.
+Kubernetes e ELK são alternativas/complementos de infraestrutura; não são
+necessários para usar a interface ou executar a suíte de desenvolvimento.
 
-Os indicadores LIVE e ONLINE usam luzes pulsantes, com pulso mais rápido durante
-operações. São indicadores visuais de atividade, não monitoramento contínuo da
-conectividade. A preferência `prefers-reduced-motion` desativa as animações.
-Os botões de ações usam rótulos de texto; os controles da Pokédex mantêm o símbolo
-de girar e as setas de navegação, com nomes acessíveis. O comportamento mobile
-first é mantido.
+## Autor e objetivo
+
+**BigodeMarine**. Projeto de estudo de desenvolvimento backend e frontend,
+integração de APIs, persistência, cache, testes, containerização e CI/CD.
+Pokémon pertence à Nintendo / Game Freak / The Pokémon Company.

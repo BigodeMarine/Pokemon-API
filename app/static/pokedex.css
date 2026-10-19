@@ -321,15 +321,19 @@ h1 span {
   padding-block: 15px;
 }
 .black-button {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   color: #d3ded8;
   background: #29383d;
   border: 3px solid #172b31;
   border-radius: 50%;
-  font-size: 25px;
+  font-size: 36px;
   box-shadow: 0 3px #96243b;
   flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  line-height: 1;
 }
 .mini-leds {
   display: flex;
@@ -869,7 +873,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .edit-measures { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 110px), 1fr)); gap: 12px; }
 .panel-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 #edit-error, #delete-error { color: #ffe1a3; }
-.black-button { font-size: 25px; }
 .activity { display: inline-flex; align-items: center; gap: 6px; }
 .activity i { position: relative; display: inline-block; width: 6px; height: 6px; flex-shrink: 0; border-radius: 50%; background: currentColor; }
 .activity i::after { content: ''; position: absolute; inset: -3px; border: 1px solid currentColor; border-radius: 50%; animation: signal-ping 2.4s ease-out infinite; }
