@@ -321,19 +321,15 @@ h1 span {
   padding-block: 15px;
 }
 .black-button {
-  width: 48px;
-  height: 48px;
+  width: 44px;
+  height: 44px;
   color: #d3ded8;
   background: #29383d;
   border: 3px solid #172b31;
   border-radius: 50%;
-  font-size: 36px;
+  font-size: 25px;
   box-shadow: 0 3px #96243b;
   flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  line-height: 1;
 }
 .mini-leds {
   display: flex;

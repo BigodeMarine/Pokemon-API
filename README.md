@@ -60,8 +60,8 @@ As media queries usam `min-width`, ampliando o layout apenas quando há espaço:
 
 A Pokédex tem largura máxima de 1000 px. Espaçamentos fluidos, quebra de nomes e
 mensagens e reorganização das medidas evitam cortes em telas pequenas. Os
-controles de toque principais têm pelo menos 44 px; o botão ↻ mede 48 px, com
-símbolo de 36 px. O campo de busca usa fonte de 16 px e o viewport permite zoom.
+controles de toque principais têm pelo menos 44 px; o botão ↻ mede 44 px, com
+símbolo de 25 px. O campo de busca usa fonte de 16 px e o viewport permite zoom.
 
 As luzes têm pulso suave; durante operações, o pulso fica mais rápido.
 São indicadores visuais de atividade, não monitoramento contínuo da conexão.
